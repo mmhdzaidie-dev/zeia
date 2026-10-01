@@ -1,29 +1,29 @@
-name: ZEIA Native Builds
+name: ZEIA Build
 
 on:
-  workflow_dispatch:
   push:
-    branches: [main]
-
-permissions:
-  contents: write
-
-env:
-  FLUTTER_VERSION: '3.47.2'
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
+
   android:
+    name: android
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          flutter-version: 3.47.2
           channel: stable
-          cache: true
 
-      - run: flutter create --platforms=android .
+      - name: Create Android platform
+        run: flutter create --platforms=android .
 
       - name: Configure Android background audio
         shell: bash
@@ -31,114 +31,156 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          p = Path('android/app/src/main/AndroidManifest.xml')
+          p = Path("android/app/src/main/AndroidManifest.xml")
           s = p.read_text()
 
-          if 'android.permission.INTERNET' not in s:
+          if "android.permission.FOREGROUND_SERVICE" not in s:
               s = s.replace(
-                  '<manifest xmlns:android="http://schemas.android.com/apk/res/android">',
-                  '<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n'
-                  '    <uses-permission android:name="android.permission.INTERNET" />'
+                  "<manifest",
+                  '<manifest xmlns:tools="http://schemas.android.com/tools"',
+                  1
               )
 
-          if 'android.permission.FOREGROUND_SERVICE' not in s:
               s = s.replace(
-                  '<uses-permission android:name="android.permission.INTERNET" />',
-                  '<uses-permission android:name="android.permission.INTERNET" />\n'
-                  '    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n'
-                  '    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />'
+                  "<application",
+                  '<uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>\n'
+                  '<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>\n'
+                  '<application',
+                  1
               )
 
           p.write_text(s)
           PY
 
-      - run: flutter pub get
-      - run: flutter build apk --release
+      - name: Flutter pub get
+        run: flutter pub get
 
-      - uses: actions/upload-artifact@v4
+      - name: Build Android
+        run: flutter build apk --release
+
+      - name: Upload Android
+        uses: actions/upload-artifact@v4
         with:
           name: ZEIA-Android
           path: build/app/outputs/flutter-apk/app-release.apk
 
-  windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-
-      - run: flutter create --platforms=windows .
-      - run: flutter pub get
-      - run: env: { CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS }\n          flutter build windows --release
-
-      - shell: pwsh
-        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath ZEIA-Windows.zip
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ZEIA-Windows
-          path: ZEIA-Windows.zip
-
   macos:
+    name: macos
     runs-on: macos-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          flutter-version: 3.47.2
           channel: stable
-          cache: true
 
-      - run: flutter create --platforms=macos .
-      - run: flutter pub get
-      - run: flutter build macos --release
+      - name: Create macOS platform
+        run: flutter create --platforms=macos .
 
-      - run: ditto -c -k --sequesterRsrc --keepParent build/macos/Build/Products/Release/zeia.app ZEIA-macOS.zip
+      - name: Flutter pub get
+        run: flutter pub get
 
-      - uses: actions/upload-artifact@v4
+      - name: Build macOS
+        run: flutter build macos --release
+
+      - name: Package macOS
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            build/macos/Build/Products/Release/zeia.app \
+            ZEIA-macOS.zip
+
+      - name: Upload macOS
+        uses: actions/upload-artifact@v4
         with:
           name: ZEIA-macOS
           path: ZEIA-macOS.zip
 
-  ios:
-    runs-on: macos-latest
+  windows:
+    name: windows
+    runs-on: windows-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          flutter-version: 3.47.2
           channel: stable
-          cache: true
 
-      - run: flutter create --platforms=ios .
+      - name: Create Windows platform
+        run: flutter create --platforms=windows .
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build Windows
+        shell: pwsh
+        env:
+          CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
+        run: flutter build windows --release
+
+      - name: Package Windows
+        shell: pwsh
+        run: |
+          Compress-Archive `
+            -Path build/windows/x64/runner/Release/* `
+            -DestinationPath ZEIA-Windows.zip
+
+      - name: Upload Windows
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZEIA-Windows
+          path: ZEIA-Windows.zip
+
+  ios:
+    name: ios
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+
+      - name: Create iOS platform
+        run: flutter create --platforms=ios .
 
       - name: Enable iOS background audio
         shell: bash
         run: |
-          /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" ios/Runner/Info.plist || true
-          /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" ios/Runner/Info.plist || true
+          /usr/libexec/PlistBuddy \
+            -c "Add :UIBackgroundModes array" \
+            ios/Runner/Info.plist 2>/dev/null || true
 
-      - run: flutter pub get
+          /usr/libexec/PlistBuddy \
+            -c "Add :UIBackgroundModes:0 string audio" \
+            ios/Runner/Info.plist 2>/dev/null || true
 
-      - name: Build iOS simulator without signing
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build iOS simulator
         run: flutter build ios --simulator
 
-      - run: |
+      - name: Package iOS simulator
+        run: |
           mkdir -p ios-artifact
-          cp -R build/ios/iphonesimulator/Runner.app ios-artifact/ZEIA-Simulator.app
-
-      - run: |
           ditto -c -k --sequesterRsrc --keepParent \
-          ios-artifact/ZEIA-Simulator.app \
-          ZEIA-iOS-Simulator.zip
+            build/ios/iphonesimulator/Runner.app \
+            ios-artifact/ZEIA-iOS-Simulator.zip
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload iOS simulator
+        uses: actions/upload-artifact@v4
         with:
           name: ZEIA-iOS-Simulator
-          path: ZEIA-iOS-Simulator.zip
+          path: ios-artifact/ZEIA-iOS-Simulator.zip
