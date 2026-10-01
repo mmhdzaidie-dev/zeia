@@ -1,0 +1,7 @@
+import 'package:flutter/material.dart';
+import '../../data/repositories/local_repository.dart';
+import '../../models/song.dart';
+import '../../widgets/song_card.dart';
+
+class SearchScreen extends StatefulWidget { final LocalRepository repo; final ValueChanged<Song> onPlay; const SearchScreen({super.key,required this.repo,required this.onPlay}); @override State<SearchScreen> createState()=>_SearchScreenState(); }
+class _SearchScreenState extends State<SearchScreen>{ final q=TextEditingController(); String query=''; @override Widget build(BuildContext context){ final list=widget.repo.songs.where((s)=>query.isEmpty||'${s.title} ${s.artist} ${s.category}'.toLowerCase().contains(query.toLowerCase())).toList(); return Column(children:[Padding(padding:const EdgeInsets.fromLTRB(20,18,20,12),child:TextField(controller:q,onChanged:(v)=>setState(()=>query=v),decoration:InputDecoration(hintText:'Cari lagu, artis, atau genre',prefixIcon:const Icon(Icons.search_rounded),filled:true,fillColor:const Color(0xff151515),border:OutlineInputBorder(borderRadius:BorderRadius.circular(14),borderSide:BorderSide.none)))),Expanded(child:GridView.builder(padding:const EdgeInsets.all(20),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,crossAxisSpacing:14,mainAxisSpacing:18,childAspectRatio:.72),itemCount:list.length,itemBuilder:(_,i)=>SongCard(song:list[i],onTap:()=>widget.onPlay(list[i]))))]); } }

@@ -1,0 +1,6 @@
+import 'package:flutter/material.dart';
+import '../../data/repositories/local_repository.dart';
+import '../../models/song.dart';
+import '../../widgets/song_card.dart';
+
+class LibraryScreen extends StatelessWidget { final LocalRepository repo; final ValueChanged<Song> onPlay; const LibraryScreen({super.key,required this.repo,required this.onPlay}); @override Widget build(BuildContext context)=>ListView(padding:const EdgeInsets.fromLTRB(20,24,20,110),children:[const Text('Library',style:TextStyle(fontSize:28,fontWeight:FontWeight.w800)),const SizedBox(height:22),Container(height:120,decoration:BoxDecoration(color:const Color(0xff151515),borderRadius:BorderRadius.circular(16)),child:InkWell(onTap:(){},child:const Row(children:[SizedBox(width:20),Icon(Icons.add_rounded,size:34),SizedBox(width:16),Text('Buat Playlist',style:TextStyle(fontSize:18,fontWeight:FontWeight.w700))]))),const SizedBox(height:28),const Text('Semua Lagu',style:TextStyle(fontSize:20,fontWeight:FontWeight.w700)),const SizedBox(height:14),...repo.songs.map((s)=>ListTile(contentPadding:EdgeInsets.zero,onTap:()=>onPlay(s),leading:ClipRRect(borderRadius:BorderRadius.circular(8),child:Image.asset(s.cover,width:52,height:52,fit:BoxFit.cover)),title:Text(s.title),subtitle:Text(s.artist),trailing:const Icon(Icons.more_horiz_rounded))) ]); }
