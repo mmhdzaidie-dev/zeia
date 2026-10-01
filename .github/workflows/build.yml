@@ -73,7 +73,7 @@ jobs:
 
       - run: flutter create --platforms=windows .
       - run: flutter pub get
-      - run: flutter build windows --release
+      - run: env: { CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS }\n          flutter build windows --release
 
       - shell: pwsh
         run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath ZEIA-Windows.zip
@@ -127,7 +127,7 @@ jobs:
       - run: flutter pub get
 
       - name: Build iOS simulator without signing
-        run: flutter build ios --release --simulator
+        run: flutter build ios --simulator
 
       - run: |
           mkdir -p ios-artifact
