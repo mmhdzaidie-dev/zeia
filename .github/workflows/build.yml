@@ -16,26 +16,45 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+
       - run: flutter create --platforms=android .
+
       - name: Configure Android background audio
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p=Path('android/app/src/main/AndroidManifest.xml')
-          s=p.read_text()
-          marker='<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
-          perms='''<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />'''
-          if 'FOREGROUND_SERVICE_MEDIA_PLAYBACK' not in s: s=s.replace(marker,perms)
+
+          p = Path('android/app/src/main/AndroidManifest.xml')
+          s = p.read_text()
+
+          if 'android.permission.INTERNET' not in s:
+              s = s.replace(
+                  '<manifest xmlns:android="http://schemas.android.com/apk/res/android">',
+                  '<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n'
+                  '    <uses-permission android:name="android.permission.INTERNET" />'
+              )
+
+          if 'android.permission.FOREGROUND_SERVICE' not in s:
+              s = s.replace(
+                  '<uses-permission android:name="android.permission.INTERNET" />',
+                  '<uses-permission android:name="android.permission.INTERNET" />\n'
+                  '    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n'
+                  '    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />'
+              )
+
           p.write_text(s)
           PY
+
       - run: flutter pub get
       - run: flutter build apk --release
+
       - uses: actions/upload-artifact@v4
         with:
           name: ZEIA-Android
@@ -45,16 +64,20 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+
       - run: flutter create --platforms=windows .
       - run: flutter pub get
       - run: flutter build windows --release
+
       - shell: pwsh
         run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath ZEIA-Windows.zip
+
       - uses: actions/upload-artifact@v4
         with:
           name: ZEIA-Windows
@@ -64,15 +87,19 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+
       - run: flutter create --platforms=macos .
       - run: flutter pub get
       - run: flutter build macos --release
+
       - run: ditto -c -k --sequesterRsrc --keepParent build/macos/Build/Products/Release/zeia.app ZEIA-macOS.zip
+
       - uses: actions/upload-artifact@v4
         with:
           name: ZEIA-macOS
@@ -82,22 +109,36 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+
       - run: flutter create --platforms=ios .
+
       - name: Enable iOS background audio
         shell: bash
         run: |
           /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" ios/Runner/Info.plist || true
           /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" ios/Runner/Info.plist || true
+
       - run: flutter pub get
-      - run: flutter build ios --release --no-codesign
-      - run: mkdir -p ios-artifact && cp -R build/ios/iphoneos/Runner.app ios-artifact/ZEIA.app
-      - run: ditto -c -k --sequesterRsrc --keepParent ios-artifact/ZEIA.app ZEIA-iOS-unsigned.zip
+
+      - name: Build iOS simulator without signing
+        run: flutter build ios --release --simulator
+
+      - run: |
+          mkdir -p ios-artifact
+          cp -R build/ios/iphonesimulator/Runner.app ios-artifact/ZEIA-Simulator.app
+
+      - run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+          ios-artifact/ZEIA-Simulator.app \
+          ZEIA-iOS-Simulator.zip
+
       - uses: actions/upload-artifact@v4
         with:
-          name: ZEIA-iOS-unsigned
-          path: ZEIA-iOS-unsigned.zip
+          name: ZEIA-iOS-Simulator
+          path: ZEIA-iOS-Simulator.zip

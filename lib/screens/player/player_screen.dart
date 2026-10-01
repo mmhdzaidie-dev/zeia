@@ -2,5 +2,199 @@ import 'package:flutter/material.dart';
 import '../../models/song.dart';
 import '../../services/player_service.dart';
 
-class PlayerScreen extends StatelessWidget { final Song song; final ZeiaPlayerHandler player; const PlayerScreen({super.key,required this.song,required this.player}); @override Widget build(BuildContext context)=>Scaffold(backgroundColor:const Color(0xff080808),appBar:AppBar(backgroundColor:Colors.transparent,title:const Text('Now Playing'),centerTitle:true),body:SafeArea(child:Padding(padding:const EdgeInsets.fromLTRB(24,10,24,30),child:Column(children:[Expanded(child:ClipRRect(borderRadius:BorderRadius.circular(22),child:Image.asset(song.cover,fit:BoxFit.cover,width:double.infinity))),const SizedBox(height:26),Row(children:[Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(song.title,style:const TextStyle(fontSize:25,fontWeight:FontWeight.w800)),const SizedBox(height:5),Text(song.artist,style:TextStyle(color:Colors.grey.shade500,fontSize:16))])),const Icon(Icons.favorite_border_rounded,size:28)]),const SizedBox(height:24),StreamBuilder<Duration>(stream:player.player.positionStream,initialData:Duration.zero,builder:(c,s)=>StreamBuilder<Duration?>(stream:player.player.durationStream,initialData:Duration.zero,builder:(c,d){final max=(d.data??Duration.zero).inMilliseconds.toDouble();final double value=max<=0?0.0:(s.data!.inMilliseconds/max).clamp(0.0,1.0).toDouble();return Column(children:[Slider(value:value,onChanged:(v){if(max>0)player.seek(Duration(milliseconds:(max*v).round()));}),Row(mainAxisAlignment:MainAxisAlignment.spaceBetween,children:[Text(_fmt(s.data!)),Text(_fmt(d.data??Duration.zero))])]);})),const SizedBox(height:12),StreamBuilder<bool>(stream:player.player.playingStream,initialData:player.player.playing,builder:(c,s)=>Row(mainAxisAlignment:MainAxisAlignment.center,children:[IconButton(onPressed:(){},icon:const Icon(Icons.skip_previous_rounded),iconSize:36),const SizedBox(width:20),Container(decoration:const BoxDecoration(shape:BoxShape.circle,color:Color(0xff8b5cf6)),child:IconButton(onPressed:()=>s.data!?player.pause():player.play(),icon:Icon(s.data!?Icons.pause_rounded:Icons.play_arrow_rounded,color:Colors.white),iconSize:40)),const SizedBox(width:20),IconButton(onPressed:(){},icon:const Icon(Icons.skip_next_rounded),iconSize:36)])),const SizedBox(height:20),const Align(alignment:Alignment.centerLeft,child:Text('Lyrics',style:TextStyle(fontSize:20,fontWeight:FontWeight.w700))),const SizedBox(height:8),Text('Lyrics akan tersedia ketika sumber lirik sudah dihubungkan.',style:TextStyle(color:Colors.grey))])))); }
-String _fmt(Duration d)=>'${d.inMinutes.remainder(60).toString().padLeft(2,'0')}:${d.inSeconds.remainder(60).toString().padLeft(2,'0')}'';
+class PlayerScreen extends StatelessWidget {
+  final Song song;
+  final ZeiaPlayerHandler player;
+
+  const PlayerScreen({
+    super.key,
+    required this.song,
+    required this.player,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xff080808),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: const Text('Now Playing'),
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 10, 24, 30),
+          child: Column(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(22),
+                  child: Image.asset(
+                    song.cover,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 26),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          song.title,
+                          style: const TextStyle(
+                            fontSize: 25,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          song.artist,
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.favorite_border_rounded,
+                    size: 28,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              StreamBuilder<Duration>(
+                stream: player.player.positionStream,
+                initialData: Duration.zero,
+                builder: (context, positionSnapshot) {
+                  return StreamBuilder<Duration?>(
+                    stream: player.player.durationStream,
+                    initialData: Duration.zero,
+                    builder: (context, durationSnapshot) {
+                      final position =
+                          positionSnapshot.data ?? Duration.zero;
+                      final duration =
+                          durationSnapshot.data ?? Duration.zero;
+
+                      final max =
+                          duration.inMilliseconds.toDouble();
+
+                      final double value = max <= 0
+                          ? 0.0
+                          : (position.inMilliseconds.toDouble() / max)
+                              .clamp(0.0, 1.0)
+                              .toDouble();
+
+                      return Column(
+                        children: [
+                          Slider(
+                            value: value,
+                            onChanged: max <= 0
+                                ? null
+                                : (newValue) {
+                                    player.seek(
+                                      Duration(
+                                        milliseconds:
+                                            (max * newValue).round(),
+                                      ),
+                                    );
+                                  },
+                          ),
+                          Row(
+                            mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(_fmt(position)),
+                              Text(_fmt(duration)),
+                            ],
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              StreamBuilder<bool>(
+                stream: player.player.playingStream,
+                initialData: player.player.playing,
+                builder: (context, snapshot) {
+                  final playing = snapshot.data ?? false;
+
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        onPressed: () {},
+                        icon: const Icon(
+                          Icons.skip_previous_rounded,
+                        ),
+                        iconSize: 36,
+                      ),
+                      const SizedBox(width: 20),
+                      Container(
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xff8b5cf6),
+                        ),
+                        child: IconButton(
+                          onPressed:
+                              playing ? player.pause : player.play,
+                          icon: Icon(
+                            playing
+                                ? Icons.pause_rounded
+                                : Icons.play_arrow_rounded,
+                            color: Colors.white,
+                          ),
+                          iconSize: 40,
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      IconButton(
+                        onPressed: () {},
+                        icon: const Icon(
+                          Icons.skip_next_rounded,
+                        ),
+                        iconSize: 36,
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Lyrics',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Lyrics akan tersedia ketika sumber lirik sudah dihubungkan.',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _fmt(Duration duration) {
+  final minutes =
+      duration.inMinutes.remainder(60).toString().padLeft(2, "0");
+  final seconds =
+      duration.inSeconds.remainder(60).toString().padLeft(2, "0");
+
+  return '$minutes:$seconds';
+}

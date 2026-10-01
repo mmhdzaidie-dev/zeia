@@ -60,7 +60,7 @@ Future<ZeiaPlayerHandler> createAudioHandler() async {
       androidNotificationChannelId:'id.zdv.zeia.audio',
       androidNotificationChannelName:'ZEIA Music',
       androidNotificationOngoing:true,
-      androidStopForegroundOnPause:false,
+      androidStopForegroundOnPause:true,
       androidNotificationIcon:'mipmap/ic_launcher',
       fastForwardInterval:Duration(seconds:10),
       rewindInterval:Duration(seconds:10),
